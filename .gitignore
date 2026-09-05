@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+coverage/
+artifacts/
+cache/
+typechain-types/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Hardhat local deployments
+contracts/ignition/deployments/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor and operating system
+.vscode/
+.DS_Store
+Thumbs.db
