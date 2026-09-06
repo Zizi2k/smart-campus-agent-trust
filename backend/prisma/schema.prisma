@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AgentStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum RequestStatus {
+  CREATED
+  PENDING
+  APPROVED
+  REJECTED
+  EXECUTING
+  EXECUTED
+  FAILED
+}
+
+enum UserRole {
+  ADMIN
+  APPROVER
+  AUDITOR
+}
+
+enum ApprovalDecision {
+  APPROVED
+  REJECTED
+}
+
+model Agent {
+  id                String      @id @default(cuid())
+  blockchainAgentId String      @unique @db.VarChar(66)
+  walletAddress     String      @unique @db.VarChar(42)
+  name              String      @db.VarChar(100)
+  type              String      @db.VarChar(50)
+  description       String?
+  clientId          String      @unique @db.VarChar(100)
+  clientSecretHash  String
+  status            AgentStatus @default(ACTIVE)
+  expiresAt         DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  permissions    Permission[]
+  actionRequests ActionRequest[]
+
+  @@index([status])
+  @@index([type])
+}
+
+model Permission {
+  id         String    @id @default(cuid())
+  agentId    String
+  service    String    @db.VarChar(100)
+  action     String    @db.VarChar(100)
+  allowed    Boolean   @default(true)
+  riskLevel  RiskLevel
+  dailyLimit Int
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@unique([agentId, service, action])
+  @@index([agentId])
+}
+
+model ActionRequest {
+  id               String        @id @default(cuid())
+  requestId        String        @unique @db.VarChar(100)
+  agentId          String
+  service          String        @db.VarChar(100)
+  action           String        @db.VarChar(100)
+  resourceId       String?       @db.VarChar(100)
+  payload          Json
+  payloadHash      String        @db.VarChar(66)
+  nonce            String        @unique @db.VarChar(100)
+  status           RequestStatus @default(CREATED)
+  blockchainTxHash String?       @db.VarChar(66)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  agent     Agent      @relation(fields: [agentId], references: [id])
+  approval  Approval?
+  execution Execution?
+
+  @@index([agentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model User {
+  id            String   @id @default(cuid())
+  username      String   @unique @db.VarChar(100)
+  passwordHash  String
+  walletAddress String?  @unique @db.VarChar(42)
+  role          UserRole
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  approvals Approval[]
+
+  @@index([role])
+}
+
+model Approval {
+  id               String           @id @default(cuid())
+  actionRequestId  String           @unique
+  approverId       String
+  decision         ApprovalDecision
+  reason           String?
+  decisionHash     String           @db.VarChar(66)
+  blockchainTxHash String?          @db.VarChar(66)
+  createdAt        DateTime         @default(now())
+
+  actionRequest ActionRequest @relation(fields: [actionRequestId], references: [id])
+  approver      User          @relation(fields: [approverId], references: [id])
+
+  @@index([approverId])
+  @@index([decision])
+}
+
+model Execution {
+  id               String   @id @default(cuid())
+  actionRequestId  String   @unique
+  result           Json
+  resultHash       String   @db.VarChar(66)
+  success          Boolean
+  blockchainTxHash String?  @db.VarChar(66)
+  executedAt       DateTime @default(now())
+
+  actionRequest ActionRequest @relation(fields: [actionRequestId], references: [id])
+}
