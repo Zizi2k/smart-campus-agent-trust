@@ -45,11 +45,19 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host `
-  "Synchronizing agents and permissions..." `
+  "Preparing database schema and admin user..." `
   -ForegroundColor Cyan
 
 Set-Location "$projectRoot\backend"
+npx prisma migrate deploy
+npm run seed:admin
+
+Write-Host `
+  "Synchronizing agents and permissions..." `
+  -ForegroundColor Cyan
+
 npm run sync:blockchain
+
 
 
 Write-Host "Starting backend..." `

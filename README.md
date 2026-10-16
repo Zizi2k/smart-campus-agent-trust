@@ -95,26 +95,33 @@ smart-campus-agent-trust
 
 ## Cấu hình môi trường
 
-Tạo `backend/.env`:
+Dự án đã chuẩn bị sẵn các file mẫu cấu hình cho môi trường cục bộ (Hardhat local). Bạn có thể sao chép nhanh:
+
+```powershell
+copy backend\.env.example backend\.env
+copy frontend\.env.example frontend\.env
+```
+
+Nội dung cấu hình chuẩn trong `backend/.env`:
 
 ```env
 DATABASE_URL="postgresql://campus:campus@localhost:5432/campus_audit"
 PORT=3100
-JWT_SECRET="replace-with-a-long-random-secret"
+JWT_SECRET="smart-campus-jwt-secret-key-super-secure-2026"
 RPC_URL="http://127.0.0.1:8545"
-CONTRACT_ADDRESS="0x..."
-BACKEND_SIGNER_PRIVATE_KEY="0x..."
+CONTRACT_ADDRESS="0x5FbDB2315678afecb367f032d93F642f64180aa3"
+BACKEND_SIGNER_PRIVATE_KEY="0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 ADMIN_USERNAME="admin"
-ADMIN_PASSWORD="replace-with-a-strong-password"
+ADMIN_PASSWORD="campuspassword123"
 ```
 
-Tạo `frontend/.env`:
+*Lưu ý: `ADMIN_PASSWORD` phải từ 12 ký tự trở lên. Không commit các file `.env` lên repo.*
+
+Nội dung cấu hình trong `frontend/.env`:
 
 ```env
 VITE_API_URL=http://localhost:3100
 ```
-
-Không commit các file `.env`.
 
 ## Cài đặt
 
@@ -158,6 +165,14 @@ Kiểm tra:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\health-check.ps1
+```
+
+## Dừng hệ thống
+
+Dừng toàn bộ dịch vụ (Hardhat node, backend, frontend và container PostgreSQL) chỉ với 1 lệnh:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\stop-dev.ps1
 ```
 
 ## Địa chỉ local

@@ -1,39 +1,193 @@
+/* ==============================================================================
+   SMART CAMPUS AGENT TRUST · ENTERPRISE CYBERSECURITY DESIGN SYSTEM
+   Theme: Executive High-Tech Security Console
+   Design: Balanced 6px-8px Radii, Rich Semantic Accents, Lucide Icons
+   ============================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 :root {
-  font-family:
-    Inter, ui-sans-serif, system-ui,
-    -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
-  color: #132238;
-  background: #f3f6fa;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", SFMono-Regular, Consolas, monospace;
+
+  /* Crisp Professional Radii */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 220ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-* {
+/* ==============================================================================
+   THEME PALETTES
+   ============================================================================== */
+
+/* 1. DARK THEME (Enterprise Midnight Obsidian & Electric Cyber) */
+[data-theme="dark"] {
+  --bg-app: #080b11;
+  --bg-surface: #0f1523;
+  --bg-surface-elevated: #161e31;
+  --bg-surface-subtle: #0d121e;
+  --bg-input: #0a0e18;
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-active: rgba(255, 255, 255, 0.08);
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --border-focus: #3b82f6;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --accent-primary: #2563eb;
+  --accent-primary-hover: #1d4ed8;
+  --accent-primary-text: #ffffff;
+  --accent-subtle: rgba(37, 99, 235, 0.15);
+
+  /* Semantic Cyber Tones */
+  --color-brand: #3b82f6;
+  --color-brand-bg: rgba(59, 130, 246, 0.12);
+  --color-brand-border: rgba(59, 130, 246, 0.28);
+
+  --status-active-bg: rgba(16, 185, 129, 0.12);
+  --status-active-text: #34d399;
+  --status-active-border: rgba(16, 185, 129, 0.3);
+
+  --status-pending-bg: rgba(245, 158, 11, 0.12);
+  --status-pending-text: #fbbf24;
+  --status-pending-border: rgba(245, 158, 11, 0.3);
+
+  --status-danger-bg: rgba(239, 68, 68, 0.12);
+  --status-danger-text: #f87171;
+  --status-danger-border: rgba(239, 68, 68, 0.3);
+
+  --status-info-bg: rgba(14, 165, 233, 0.12);
+  --status-info-text: #38bdf8;
+  --status-info-border: rgba(14, 165, 233, 0.3);
+
+  --status-crypto-bg: rgba(139, 92, 246, 0.12);
+  --status-crypto-text: #a78bfa;
+  --status-crypto-border: rgba(139, 92, 246, 0.3);
+
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 4px 16px -2px rgba(0, 0, 0, 0.5);
+  --shadow-overlay: 0 20px 40px -4px rgba(0, 0, 0, 0.7);
+
+  --glow-brand: 0 0 20px rgba(59, 130, 246, 0.15);
+  --glow-success: 0 0 20px rgba(16, 185, 129, 0.15);
+  --glow-warning: 0 0 20px rgba(245, 158, 11, 0.15);
+}
+
+/* 2. LIGHT THEME (Executive Slate & Tech Precision) */
+[data-theme="light"] {
+  --bg-app: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-surface-elevated: #f8fafc;
+  --bg-surface-subtle: #edf2f7;
+  --bg-input: #ffffff;
+  --bg-hover: rgba(15, 23, 42, 0.04);
+  --bg-active: rgba(15, 23, 42, 0.08);
+
+  --border-subtle: #e2e8f0;
+  --border-medium: #cbd5e1;
+  --border-strong: #94a3b8;
+  --border-focus: #2563eb;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  --accent-primary: #1d4ed8;
+  --accent-primary-hover: #1e40af;
+  --accent-primary-text: #ffffff;
+  --accent-subtle: rgba(29, 78, 216, 0.1);
+
+  /* Semantic Cyber Tones */
+  --color-brand: #2563eb;
+  --color-brand-bg: #eff6ff;
+  --color-brand-border: #bfdbfe;
+
+  --status-active-bg: #ecfdf5;
+  --status-active-text: #047857;
+  --status-active-border: #a7f3d0;
+
+  --status-pending-bg: #fffbeb;
+  --status-pending-text: #b45309;
+  --status-pending-border: #fde68a;
+
+  --status-danger-bg: #fef2f2;
+  --status-danger-text: #b91c1c;
+  --status-danger-border: #fecaca;
+
+  --status-info-bg: #f0f9ff;
+  --status-info-text: #0284c7;
+  --status-info-border: #bae6fd;
+
+  --status-crypto-bg: #f5f3ff;
+  --status-crypto-text: #6d28d9;
+  --status-crypto-border: #ddd6fe;
+
+  --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 2px 8px -1px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-overlay: 0 20px 30px -10px rgba(15, 23, 42, 0.15);
+
+  --glow-brand: 0 0 16px rgba(37, 99, 235, 0.12);
+  --glow-success: 0 0 16px rgba(16, 185, 129, 0.12);
+  --glow-warning: 0 0 16px rgba(245, 158, 11, 0.12);
+}
+
+/* ==============================================================================
+   BASE RESET & TYPOGRAPHY
+   ============================================================================== */
+*, *::before, *::after {
   box-sizing: border-box;
-}
-
-html {
-  min-width: 320px;
-  min-height: 100%;
-}
-
-body {
-  min-width: 320px;
-  min-height: 100vh;
   margin: 0;
+  padding: 0;
 }
 
-button,
-input {
-  font: inherit;
+html, body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-button {
-  cursor: pointer;
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
 }
 
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
+/* Tabular Numbers for Technical Metrics & Hashes */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-medium);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
 }

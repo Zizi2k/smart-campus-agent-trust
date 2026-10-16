@@ -1,6 +1,8 @@
 import { id } from "ethers";
 
 import {
+  backendSigner,
+  blockchainProvider,
   registryContract,
   registryWriter,
 } from "../lib/blockchain.js";
@@ -29,6 +31,8 @@ async function main() {
   console.log(
     `Đang đồng bộ ${agents.length} Agent...`
   );
+
+  let currentNonce = await backendSigner.getNonce("latest");
 
   for (const agent of agents) {
     let existsOnBlockchain = true;
@@ -59,7 +63,8 @@ async function main() {
           agent.walletAddress,
           agent.name,
           agent.type,
-          expiresAt
+          expiresAt,
+          { nonce: currentNonce++ }
         );
 
       await transaction.wait();
@@ -72,7 +77,8 @@ async function main() {
     const statusTransaction =
       await registryWriter.setAgentStatus(
         agent.blockchainAgentId,
-        statusToContract[agent.status]
+        statusToContract[agent.status],
+        { nonce: currentNonce++ }
       );
 
     await statusTransaction.wait();
@@ -90,7 +96,8 @@ async function main() {
           permission.dailyLimit,
           riskToContract[
             permission.riskLevel
-          ]
+          ],
+          { nonce: currentNonce++ }
         );
 
       await permissionTransaction.wait();

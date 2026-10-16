@@ -248,6 +248,218 @@ actionsRouter.get(
     });
   }
 );
+
+const simulateActionSchema = z.object({
+  agentId: z.string().trim().min(1),
+  service: z.string().trim().min(2).max(100),
+  action: z.string().trim().min(2).max(100),
+  resourceId: z.string().trim().max(100).optional(),
+  payload: z.record(z.string(), z.unknown()),
+});
+
+actionsRouter.post(
+  "/admin/simulate",
+  adminAuth,
+  async (request, response) => {
+    const parsed = simulateActionSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return response.status(400).json({
+        message: "Dữ liệu yêu cầu hành động không hợp lệ",
+        errors: parsed.error.flatten().fieldErrors,
+      });
+    }
+
+    const { agentId, service, action, resourceId, payload: rawPayload } = parsed.data;
+
+    try {
+      const agent = await prisma.agent.findUnique({
+        where: { id: agentId },
+      });
+
+      if (!agent) {
+        return response.status(404).json({
+          message: "Không tìm thấy AI Agent",
+        });
+      }
+
+      if (agent.status !== "ACTIVE") {
+        return response.status(403).json({
+          message: "AI Agent đã bị vô hiệu hóa hoặc thu hồi",
+        });
+      }
+
+      const payload = rawPayload as Prisma.InputJsonValue;
+      const requestId = `req_${randomUUID()}`;
+      const nonce = randomUUID();
+      const payloadHash = keccak256(toUtf8Bytes(JSON.stringify(rawPayload)));
+      const permissionKey = id(`${service}:${action}`);
+
+      const databasePermission = await prisma.permission.findUnique({
+        where: {
+          agentId_service_action: {
+            agentId: agent.id,
+            service,
+            action,
+          },
+        },
+      });
+
+      const blockchainAuthorized = await registryContract.isAuthorized(
+        agent.blockchainAgentId,
+        permissionKey
+      );
+
+      if (!databasePermission || !databasePermission.allowed || !blockchainAuthorized) {
+        const rejected = await prisma.actionRequest.create({
+          data: {
+            requestId,
+            agentId: agent.id,
+            service,
+            action,
+            resourceId,
+            payload,
+            payloadHash,
+            nonce,
+            status: "REJECTED",
+          },
+        });
+
+        return response.status(403).json({
+          message: "AI Agent không có quyền thực hiện hành động này (ABAC Denied)",
+          requestId: rejected.requestId,
+          status: "REJECTED",
+          checks: {
+            database: databasePermission?.allowed ?? false,
+            blockchain: blockchainAuthorized,
+          },
+        });
+      }
+
+      const startOfToday = new Date();
+      startOfToday.setUTCHours(0, 0, 0, 0);
+
+      const dailyUsage = await prisma.actionRequest.count({
+        where: {
+          agentId: agent.id,
+          service,
+          action,
+          createdAt: {
+            gte: startOfToday,
+          },
+          status: {
+            not: "REJECTED",
+          },
+        },
+      });
+
+      if (databasePermission.dailyLimit > 0 && dailyUsage >= databasePermission.dailyLimit) {
+        const rejected = await prisma.actionRequest.create({
+          data: {
+            requestId,
+            agentId: agent.id,
+            service,
+            action,
+            resourceId,
+            payload,
+            payloadHash,
+            nonce,
+            status: "REJECTED",
+          },
+        });
+
+        return response.status(429).json({
+          message: "AI Agent đã đạt hạn mức hành động trong ngày (Quota Exceeded)",
+          requestId: rejected.requestId,
+          status: "REJECTED",
+          dailyUsage,
+          dailyLimit: databasePermission.dailyLimit,
+        });
+      }
+
+      const status = databasePermission.riskLevel === "LOW" ? "APPROVED" : "PENDING";
+
+      const actionRequest = await prisma.actionRequest.create({
+        data: {
+          requestId,
+          agentId: agent.id,
+          service,
+          action,
+          resourceId,
+          payload,
+          payloadHash,
+          nonce,
+          status,
+        },
+      });
+
+      return response.status(201).json({
+        message:
+          status === "APPROVED"
+            ? "Yêu cầu đã được tự động phê duyệt (Auto Approved)"
+            : "Yêu cầu rủi ro cao, đang chờ người có thẩm quyền phê duyệt (HITL Pending)",
+        actionRequest: {
+          id: actionRequest.id,
+          requestId: actionRequest.requestId,
+          service: actionRequest.service,
+          action: actionRequest.action,
+          resourceId: actionRequest.resourceId,
+          payloadHash: actionRequest.payloadHash,
+          status: actionRequest.status,
+          createdAt: actionRequest.createdAt,
+        },
+        permission: {
+          riskLevel: databasePermission.riskLevel,
+          dailyUsage: dailyUsage + 1,
+          dailyLimit: databasePermission.dailyLimit,
+        },
+        checks: {
+          database: true,
+          blockchain: true,
+        },
+      });
+    } catch (error) {
+      console.error("Admin simulate action request failed:", error);
+      return response.status(500).json({
+        message: "Không thể mô phỏng yêu cầu hành động",
+      });
+    }
+  }
+);
+
+actionsRouter.post(
+  "/admin/reset-database",
+  adminAuth,
+  async (_request, response) => {
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.execution.deleteMany({});
+        await tx.approval.deleteMany({});
+        await tx.actionRequest.deleteMany({});
+        await tx.permission.deleteMany({});
+        await tx.agent.deleteMany({});
+        await tx.user.deleteMany({
+          where: {
+            role: {
+              not: "ADMIN",
+            },
+          },
+        });
+      });
+
+      return response.json({
+        success: true,
+        message: "Đã làm sạch dữ liệu kiểm thử thành công (Duy trì tài khoản Admin an toàn).",
+      });
+    } catch (error) {
+      console.error("Admin reset database failed:", error);
+      return response.status(500).json({
+        message: "Không thể reset dữ liệu kiểm thử",
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+);
+
 actionsRouter.get(
   "/admin/all",
   adminAuth,
@@ -424,8 +636,12 @@ actionsRouter.get(
 
         verification: {
           payloadHashMatches:
-            actionRequest.payloadHash ===
-            executionAudit.payloadHash,
+            (executionTimestamp > 0n &&
+              actionRequest.payloadHash ===
+                executionAudit.payloadHash) ||
+            (approvalTimestamp > 0n &&
+              actionRequest.payloadHash ===
+                approvalAudit.payloadHash),
 
           resultHashMatches:
             actionRequest.execution

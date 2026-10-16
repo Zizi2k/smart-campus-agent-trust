@@ -110,38 +110,39 @@ authRouter.post("/agent", async (request, response) => {
   }
 );
 authRouter.post("/admin", async (request, response) => {
-  const parsed = adminLoginSchema.safeParse(request.body);
+  try {
+    const parsed = adminLoginSchema.safeParse(request.body);
 
-  if (!parsed.success) {
-    return response.status(400).json({
-      message: "Thiếu username hoặc password",
+    if (!parsed.success) {
+      return response.status(400).json({
+        message: "Thiếu username hoặc password",
+      });
+    }
+
+    const { username, password } = parsed.data;
+
+    const user = await prisma.user.findUnique({
+      where: {
+        username,
+      },
     });
-  }
 
-  const { username, password } = parsed.data;
+    if (!user) {
+      return response.status(401).json({
+        message: "Thông tin đăng nhập không hợp lệ",
+      });
+    }
 
-  const user = await prisma.user.findUnique({
-    where: {
-      username,
-    },
-  });
+    const passwordValid = await bcrypt.compare(
+      password,
+      user.passwordHash
+    );
 
-  if (!user) {
-    return response.status(401).json({
-      message: "Thông tin đăng nhập không hợp lệ",
-    });
-  }
-
-  const passwordValid = await bcrypt.compare(
-    password,
-    user.passwordHash
-  );
-
-  if (!passwordValid) {
-    return response.status(401).json({
-      message: "Thông tin đăng nhập không hợp lệ",
-    });
-  }
+    if (!passwordValid) {
+      return response.status(401).json({
+        message: "Thông tin đăng nhập không hợp lệ",
+      });
+    }
 
   if (!user.active || user.role !== "ADMIN") {
     return response.status(403).json({
@@ -173,6 +174,13 @@ authRouter.post("/admin", async (request, response) => {
       role: user.role,
     },
   });
+} catch (error) {
+  console.error("ADMIN LOGIN DETAILED ERROR:", error);
+  return response.status(500).json({
+    message: "Lỗi hệ thống khi xác thực quản trị",
+    error: error instanceof Error ? error.message : String(error),
+  });
+}
 });
 
 authRouter.post(
