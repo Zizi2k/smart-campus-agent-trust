@@ -1,5 +1,4 @@
-$projectRoot =
-  "C:\smart-campus-agent-trust"
+$projectRoot = Split-Path -Parent $PSScriptRoot
 
 Write-Host "Starting PostgreSQL..." `
   -ForegroundColor Cyan
@@ -10,19 +9,6 @@ docker compose up -d postgres
 if ($LASTEXITCODE -ne 0) {
   Write-Host `
     "Cannot start PostgreSQL. Check Docker Desktop." `
-    -ForegroundColor Red
-
-  exit 1
-}Write-Host `
-  "Synchronizing agents and permissions..." `
-  -ForegroundColor Cyan
-
-Set-Location "$projectRoot\backend"
-npm run sync:blockchain
-
-if ($LASTEXITCODE -ne 0) {
-  Write-Host `
-    "Blockchain synchronization failed." `
     -ForegroundColor Red
 
   exit 1
@@ -57,6 +43,14 @@ if ($LASTEXITCODE -ne 0) {
 
   exit 1
 }
+
+Write-Host `
+  "Synchronizing agents and permissions..." `
+  -ForegroundColor Cyan
+
+Set-Location "$projectRoot\backend"
+npm run sync:blockchain
+
 
 Write-Host "Starting backend..." `
   -ForegroundColor Cyan
